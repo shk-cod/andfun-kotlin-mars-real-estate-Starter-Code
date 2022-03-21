@@ -17,13 +17,18 @@
 
 package com.example.android.marsrealestate.overview
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.android.marsrealestate.network.MarsApi
+import com.example.android.marsrealestate.network.MarsProperty
+import kotlinx.coroutines.*
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import retrofit2.awaitResponse
+import java.io.IOException
 
 /**
  * The [ViewModel] that is attached to the [OverviewFragment].
@@ -37,6 +42,9 @@ class OverviewViewModel : ViewModel() {
     val response: LiveData<String>
         get() = _response
 
+    private val viewModelJob = Job()
+    private val coroutineScope = CoroutineScope(Dispatchers.Main + viewModelJob)
+
     /**
      * Call getMarsRealEstateProperties() on init so we can display status immediately.
      */
@@ -48,15 +56,21 @@ class OverviewViewModel : ViewModel() {
      * Sets the value of the status LiveData to the Mars API status.
      */
     private fun getMarsRealEstateProperties() {
-        MarsApi.retrofitService.getProperties().enqueue(object: Callback<String> {
-            override fun onResponse(call: Call<String>, response: Response<String>) {
-                //Don't works properly with moshi converter
-                _response.value = response.body()
-            }
-
-            override fun onFailure(call: Call<String>, t: Throwable) {
+        coroutineScope.launch {
+            try {
+                val response = MarsApi.retrofitService.getProperties()
+                _response.value = "Success: ${response.body()?.size} Mars properties retrieved"
+            } catch (t: Throwable) {
                 _response.value = "Failure: ${t.message}"
             }
-        })
+        }
+
+
+
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        viewModelJob.cancel()
     }
 }

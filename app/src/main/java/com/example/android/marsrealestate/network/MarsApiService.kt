@@ -17,23 +17,37 @@
 
 package com.example.android.marsrealestate.network
 
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import kotlinx.coroutines.Deferred
 import retrofit2.Call
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
 
 private const val BASE_URL = "https://mars.udacity.com/"
 
+private val moshi = Moshi.Builder()
+    .add(KotlinJsonAdapterFactory())
+    .build()
+
 private val retrofit = Retrofit.Builder()
-    .addConverterFactory(MoshiConverterFactory.create())
+    .addConverterFactory(MoshiConverterFactory.create(moshi))
     .baseUrl(BASE_URL)
     .build()
 
 interface MarsApiService {
 
+    /**
+     * Since Retrofit 2.6.0 using of Deferred is deprecated,
+     * added support of Kotlin suspend functions. API call
+     * function should return data class or it's Response
+     * wrapper for accessing metadata.
+     */
     @GET("realestate")
-    fun getProperties():
-            Call<String>
+    suspend fun getProperties():
+            Response<List<MarsProperty>>
 }
 
 object MarsApi {
