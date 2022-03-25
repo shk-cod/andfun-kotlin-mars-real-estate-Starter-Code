@@ -17,18 +17,12 @@
 
 package com.example.android.marsrealestate.overview
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.android.marsrealestate.network.MarsApi
 import com.example.android.marsrealestate.network.MarsProperty
 import kotlinx.coroutines.*
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import retrofit2.awaitResponse
-import java.io.IOException
 
 /**
  * The [ViewModel] that is attached to the [OverviewFragment].
@@ -36,11 +30,15 @@ import java.io.IOException
 class OverviewViewModel : ViewModel() {
 
     // The internal MutableLiveData String that stores the status of the most recent request
-    private val _response = MutableLiveData<String>()
+    private val _status = MutableLiveData<String>()
 
     // The external immutable LiveData for the request status String
-    val response: LiveData<String>
-        get() = _response
+    val status: LiveData<String>
+        get() = _status
+
+    private val _property = MutableLiveData<MarsProperty>()
+    val property: LiveData<MarsProperty>
+        get() = _property
 
     private val viewModelJob = Job()
     private val coroutineScope = CoroutineScope(Dispatchers.Main + viewModelJob)
@@ -59,9 +57,12 @@ class OverviewViewModel : ViewModel() {
         coroutineScope.launch {
             try {
                 val response = MarsApi.retrofitService.getProperties()
-                _response.value = "Success: ${response.body()?.size} Mars properties retrieved"
+                val properties = response.body()
+                if (properties != null && properties.isNotEmpty()) {
+                    _property.value = properties[0]
+                }
             } catch (t: Throwable) {
-                _response.value = "Failure: ${t.message}"
+                _status.value = "Failure: ${t.message}"
             }
         }
 
